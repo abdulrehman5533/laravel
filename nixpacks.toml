@@ -3,13 +3,16 @@ nixPkgs = ['php82', 'php82Packages.composer', 'nodejs_20']
 
 [phases.install]
 cmds = [
-    'composer install --no-dev --optimize-autoloader',
+    'install-php-extensions gd pdo_mysql',
+    'composer install --no-dev --optimize-autoloader --no-scripts --no-interaction --ignore-platform-req=ext-gd',
     'npm ci',
     'npm run build'
 ]
 
 [phases.build]
 cmds = [
+    'mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache',
+    'chmod -R 777 storage bootstrap/cache',
     'php artisan config:cache',
     'php artisan route:cache',
     'php artisan view:cache'
