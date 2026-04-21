@@ -1,16 +1,6 @@
-[phases.setup]
-nixPkgs = ['php82', 'php82Packages.composer', 'nodejs_20']
-
-[phases.install]
-cmds = [
-    'install-php-extensions gd pdo_mysql',
-    'composer install --no-dev --optimize-autoloader --no-scripts --no-interaction --ignore-platform-req=ext-gd',
-    'npm ci',
-    'npm run build'
-]
-
 [phases.build]
 cmds = [
+    'install-php-extensions gd pdo_mysql',
     'mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache',
     'chmod -R 777 storage bootstrap/cache',
     'php artisan config:cache',
@@ -20,3 +10,6 @@ cmds = [
 
 [start]
 cmd = 'php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT'
+
+[variables]
+PHP_VERSION = "8.4"
