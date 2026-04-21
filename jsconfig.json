@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "checkJs": false,
+    "jsx": "react",
+    "target": "es2020",
+    "module": "esnext",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false
+  },
+  "include": ["resources/**/*.js", "public/**/*.js"],
+  "exclude": ["node_modules/**", "vendor/**", "resources/views/**/*.blade.php"]
+}

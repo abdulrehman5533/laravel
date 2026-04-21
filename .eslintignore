@@ -1,0 +1,6 @@
+resources/views/**/*.blade.php
+vendor/
+node_modules/
+public/
+storage/
+bootstrap/
