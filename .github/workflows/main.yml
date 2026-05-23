@@ -19,11 +19,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathuri/setup-php@v2
-        with:
-          php-version: '8.1'
-          extensions: mbstring, xml, ctype, iconv, mysql, pdo_mysql
-          coverage: none
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y php8.1 php8.1-cli php8.1-common php8.1-mbstring php8.1-xml php8.1-mysql php8.1-curl php8.1-zip
+          sudo apt-get install -y php8.1-sqlite3 php8.1-bcmath php8.1-gd
+          php -v
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --optimize-autoloader
