@@ -1,0 +1,160 @@
+# InfinityFree Deployment Configuration
+# Note: InfinityFree doesn't support YAML deployment files
+# This file is for reference and alternative platforms only
+
+name: MAGIA LUPOS - Jewellery Management System
+version: 2.0
+
+# Application Configuration
+app:
+  name: "MAGIA LUPOS"
+  environment: production
+  debug: false
+  url: "https://your-domain.infinityfreeapp.com"
+  timezone: UTC
+  locale: en
+
+# Database Configuration
+database:
+  connection: mysql
+  host: sql123.infinityfree.com
+  port: 3306
+  database: epiz_12345678_yourdb
+  username: epiz_12345678
+  password: "${DB_PASSWORD}"
+  
+# PHP Configuration (InfinityFree Compatible)
+php:
+  version: "8.0"
+  memory_limit: 256M
+  max_execution_time: 60
+  upload_max_filesize: 10M
+  post_max_size: 10M
+  max_input_vars: 5000
+
+# Laravel Configuration
+laravel:
+  cache_driver: file
+  session_driver: file
+  queue_connection: sync
+  filesystem_disk: local
+  
+# Security Settings
+security:
+  https_enabled: true
+  display_errors: false
+  log_errors: true
+  protect_env: true
+  protect_htaccess: true
+  
+# File Permissions
+permissions:
+  storage: 755
+  bootstrap_cache: 755
+  public_storage: 755
+  env_file: 644
+
+# Deployment Steps
+deployment:
+  steps:
+    - name: "Install Dependencies"
+      command: "composer install --no-dev --optimize-autoloader"
+      local: true
+      
+    - name: "Build Assets"
+      command: "npm install && npm run build"
+      local: true
+      
+    - name: "Generate App Key"
+      command: "php artisan key:generate"
+      local: true
+      
+    - name: "Optimize Application"
+      command: |
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
+        php artisan optimize
+      local: true
+      
+    - name: "Upload via FTP"
+      host: "ftpupload.net"
+      username: "${FTP_USERNAME}"
+      password: "${FTP_PASSWORD}"
+      remote_path: "/htdocs"
+      
+    - name: "Create Database"
+      via: "InfinityFree cPanel"
+      
+    - name: "Run Migrations"
+      via: "phpMyAdmin Import or Temporary Route"
+      
+    - name: "Set Permissions"
+      paths:
+        - storage: 755
+        - bootstrap/cache: 755
+        - public/storage: 755
+
+# Environment Variables Required
+env_required:
+  - APP_NAME
+  - APP_ENV
+  - APP_KEY
+  - APP_URL
+  - DB_CONNECTION
+  - DB_HOST
+  - DB_PORT
+  - DB_DATABASE
+  - DB_USERNAME
+  - DB_PASSWORD
+
+# Not Supported on InfinityFree
+not_supported:
+  - queue_workers
+  - cron_jobs
+  - ssh_access
+  - composer_on_server
+  - node_js
+  - python_ai_agent
+  - redis_cache
+  - websockets
+  - custom_php_extensions
+
+# Alternative Deployment Platforms
+alternatives:
+  railway:
+    file: railway.toml
+    supported: true
+    full_features: true
+    
+  render:
+    file: render.yaml
+    supported: true
+    full_features: true
+    
+  heroku:
+    file: Procfile
+    supported: true
+    full_features: true
+    
+  vercel:
+    supported: false
+    note: "Frontend only"
+
+# Monitoring
+monitoring:
+  error_log: storage/logs/laravel.log
+  access_log: Not available on InfinityFree
+  health_check: /dashboard
+  
+# Backup
+backup:
+  database: "Export via phpMyAdmin"
+  files: "Download via FTP"
+  frequency: "Manual (InfinityFree limitation)"
+
+# Support
+support:
+  forum: https://forum.infinityfree.com/
+  documentation: INFINITYFREE_DEPLOYMENT.md
+  troubleshooting: See INFINITYFREE_DEPLOYMENT.md

@@ -1,26 +1,26 @@
-# Laravel Public Folder .htaccess
-# Optimized for InfinityFree Deployment
+# InfinityFree Deployment Configuration for Laravel
+# This .htaccess file is optimized for InfinityFree hosting
 
+# Enable Rewrite Engine
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
     RewriteEngine On
-
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
+    RewriteBase /
+    
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
-
+    
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Force HTTPS (if SSL is enabled on InfinityFree)
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
 
 # Security Headers
@@ -34,17 +34,63 @@
     # Enable XSS protection
     Header always set X-XSS-Protection "1; mode=block"
     
-    # Content Security Policy (adjust as needed)
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
-    
     # Referrer Policy
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    
-    # Permissions Policy
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 
-# Compression
+# Disable Directory Browsing
+Options -Indexes
+
+# Protect Sensitive Files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect .env file (CRITICAL!)
+<Files .env>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect .htaccess itself
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect sensitive files
+<FilesMatch "(composer\.(json|lock)|package\.(json|lock)|\.env\.example|\.gitignore|\.gitattributes)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# PHP Configuration for InfinityFree
+<IfModule mod_php7.c>
+    # Memory Limit (InfinityFree limit: usually 256MB)
+    php_value memory_limit 256M
+    
+    # Max Execution Time (InfinityFree limit: usually 60 seconds)
+    php_value max_execution_time 60
+    
+    # Upload Max Filesize (InfinityFree limit: usually 10MB)
+    php_value upload_max_filesize 10M
+    
+    # Post Max Size
+    php_value post_max_size 10M
+    
+    # Max Input Variables
+    php_value max_input_vars 5000
+    
+    # Display Errors (DISABLE in production!)
+    php_flag display_errors Off
+    
+    # Log Errors
+    php_flag log_errors On
+    php_value error_log /home/vol*/htdocs/errors.log
+</IfModule>
+
+# Compression (Gzip)
 <IfModule mod_deflate.c>
     # Compress HTML, CSS, JavaScript, Text, XML and fonts
     AddOutputFilterByType DEFLATE application/javascript
@@ -68,6 +114,11 @@
     AddOutputFilterByType DEFLATE text/javascript
     AddOutputFilterByType DEFLATE text/plain
     AddOutputFilterByType DEFLATE text/xml
+    
+    # Browser Bugs (Necessary for older browsers)
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
 </IfModule>
 
 # Browser Caching
@@ -93,37 +144,22 @@
     ExpiresByType application/x-javascript "access plus 1 month"
     
     # Fonts
-    ExpiresByType application/font-woff2 "access plus 1 year"
-    ExpiresByType application/font-woff "access plus 1 year"
-    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
     ExpiresByType font/ttf "access plus 1 year"
     ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    
+    # Default
+    ExpiresDefault "access plus 2 days"
 </IfModule>
-
-# File Security
-<FilesMatch "^(storage|config|database|routes|resources|vendor|\.git)">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-# Prevent access to sensitive files
-<FilesMatch "\.(env|log|sql|bak|backup|config|ini|yml|yaml|md)$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
 
 # MIME Types
 <IfModule mod_mime.c>
     AddCharset UTF-8 .html .css .js .xml .json .rss .atom
-    AddType application/javascript .js
-    AddType text/css .css
-    AddType image/svg+xml .svg .svgz
-    AddEncoding gzip .svgz
-    
-    # Font MIME types
-    AddType application/font-woff .woff
-    AddType application/font-woff2 .woff2
-    AddType application/vnd.ms-fontobject .eot
-    AddType font/ttf .ttf
-    AddType font/otf .otf
+    AddType application/javascript js
+    AddType text/css css
+    AddType image/svg+xml svg svgz
+    AddEncoding gzip svgz
 </IfModule>
