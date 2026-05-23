@@ -15,6 +15,8 @@ class PettyCash extends Model
     use BelongsToTenant, HasAuditLog, SoftDeletes;
     use HasFactory;
 
+    protected $table = 'petty_cash';
+
     protected $fillable = [
         'branch_id', 'employee_id', 'limit', 'current_balance', 'is_active',
     ];

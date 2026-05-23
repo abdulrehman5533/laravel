@@ -575,4 +575,136 @@ class InventoryProductController extends Controller
             ->header('Content-Type', 'image/png')
             ->header('Content-Disposition', 'attachment; filename="'.$product->sku.'.png"');
     }
+
+    // ==================== STOCK VALUATION ====================
+    public function stockValuation(Request $request)
+    {
+        $metalType = $request->get('metal_type');
+        $categoryId = $request->get('category_id');
+
+        $query = InventoryProduct::with(['category', 'purity'])->where('current_stock', '>', 0);
+        if ($metalType)  $query->where('metal_color', 'like', "%{$metalType}%");
+        if ($categoryId) $query->where('category_id', $categoryId);
+
+        $products = $query->get();
+
+        $summary = [
+            'total_cost_value'   => $products->sum(fn($p) => $p->current_stock * $p->cost_price),
+            'total_retail_value' => $products->sum(fn($p) => $p->current_stock * $p->selling_price),
+            'total_weight'       => $products->sum(fn($p) => $p->current_stock * $p->net_weight),
+            'total_fine_weight'  => $products->sum('fine_weight'),
+            'by_category'        => $products->groupBy('category.name')->map(fn($g) => [
+                'count'        => $g->count(),
+                'cost_value'   => $g->sum(fn($p) => $p->current_stock * $p->cost_price),
+                'retail_value' => $g->sum(fn($p) => $p->current_stock * $p->selling_price),
+                'weight'       => $g->sum(fn($p) => $p->current_stock * $p->net_weight),
+            ]),
+            'by_purity' => $products->groupBy('purity.name')->map(fn($g) => [
+                'count'      => $g->count(),
+                'cost_value' => $g->sum(fn($p) => $p->current_stock * $p->cost_price),
+                'weight'     => $g->sum(fn($p) => $p->current_stock * $p->net_weight),
+            ]),
+        ];
+
+        $categories = \App\Models\ProductCategory::active()->get();
+        return view('inventory.reports.stock-valuation', compact('products', 'summary', 'categories', 'metalType', 'categoryId'));
+    }
+
+    // ==================== REORDER LIST ====================
+    public function reorderList()
+    {
+        $products = InventoryProduct::with(['category', 'purity'])
+            ->whereColumn('current_stock', '<=', 'reorder_level')
+            ->where('current_stock', '>', 0)
+            ->orWhere('current_stock', '<=', 0)
+            ->orderBy('current_stock')
+            ->get();
+
+        $outOfStock  = $products->where('current_stock', '<=', 0);
+        $lowStock    = $products->where('current_stock', '>', 0);
+        $totalReorderValue = $products->sum(fn($p) => $p->reorder_quantity * $p->cost_price);
+
+        return view('inventory.reports.reorder-list', compact('products', 'outOfStock', 'lowStock', 'totalReorderValue'));
+    }
+
+    // ==================== BULK UPDATE ====================
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'product_ids'   => 'required|array',
+            'product_ids.*' => 'exists:inventory_products,id',
+            'action'        => 'required|in:activate,deactivate,reorder_reset',
+        ]);
+
+        $count = 0;
+        foreach ($request->product_ids as $id) {
+            $product = InventoryProduct::find($id);
+            if (!$product) continue;
+
+            match($request->action) {
+                'activate'      => $product->update(['status' => 'active']),
+                'deactivate'    => $product->update(['status' => 'inactive']),
+                'reorder_reset' => $product->update(['reorder_level' => $product->net_weight * 2]),
+            };
+            $count++;
+        }
+
+        return redirect()->back()->with('success', "{$count} products updated.");
+    }
+
+    // ==================== CSV IMPORT ====================
+    public function importForm()
+    {
+        return view('inventory.products.import');
+    }
+
+    public function importCsv(Request $request)
+    {
+        $request->validate(['csv_file' => 'required|file|mimes:csv,txt|max:2048']);
+
+        $file    = $request->file('csv_file');
+        $handle  = fopen($file->getPathname(), 'r');
+        $headers = fgetcsv($handle);
+        $headers = array_map('trim', $headers);
+
+        $imported = 0;
+        $errors   = [];
+        $categories = \App\Models\ProductCategory::pluck('id', 'name');
+        $purities   = \App\Models\PurityLevel::pluck('id', 'name');
+
+        while (($row = fgetcsv($handle)) !== false) {
+            try {
+                $data = array_combine($headers, $row);
+
+                InventoryProduct::create([
+                    'name'          => $data['name'] ?? 'Unnamed',
+                    'sku'           => $data['sku'] ?? $this->generateUniqueSKU(),
+                    'category_id'   => $categories[$data['category'] ?? ''] ?? null,
+                    'purity_id'     => $purities[$data['purity'] ?? ''] ?? null,
+                    'weight'        => $data['weight'] ?? 0,
+                    'net_weight'    => $data['net_weight'] ?? $data['weight'] ?? 0,
+                    'gross_weight'  => $data['gross_weight'] ?? $data['weight'] ?? 0,
+                    'cost_price'    => $data['cost_price'] ?? 0,
+                    'selling_price' => $data['selling_price'] ?? 0,
+                    'current_stock' => $data['current_stock'] ?? 0,
+                    'current_pieces'=> $data['current_pieces'] ?? 0,
+                    'reorder_level' => $data['reorder_level'] ?? 0,
+                    'reorder_quantity' => $data['reorder_quantity'] ?? 0,
+                    'branch_id'     => \Illuminate\Support\Facades\Auth::user()->branch_id ?? 1,
+                    'created_by'    => \Illuminate\Support\Facades\Auth::id(),
+                    'status'        => 'active',
+                ]);
+                $imported++;
+            } catch (\Exception $e) {
+                $errors[] = "Row {$imported}: " . $e->getMessage();
+            }
+        }
+        fclose($handle);
+
+        $msg = "{$imported} products imported successfully.";
+        if ($errors) $msg .= ' ' . count($errors) . ' rows had errors.';
+
+        return redirect()->route('inventory.products.index')->with('success', $msg);
+    }
+
 }

@@ -102,51 +102,72 @@ class WeightCalculatorController extends Controller
     }
 
     /**
-     * Calculate price breakdown
+     * Full calculation with all new features
      */
     public function calculate(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
-                'input_weight' => 'required|numeric|min:0.001',
-                'input_unit' => 'required|string',
-                'karat' => 'required|in:24,22,21,20,18,14,10',
-                'rate_per_gram' => 'required|numeric|min:0',
-                'wastage_type' => 'required|in:percentage,fixed',
-                'wastage_value' => 'required|numeric|min:0',
-                'making_charge_type' => 'required|in:fixed,per_gram,percentage',
-                'making_charge_value' => 'required|numeric|min:0',
-                'stone_weight' => 'nullable|numeric|min:0',
-                'stone_unit' => 'nullable|string',
+                'input_weight'          => 'required|numeric|min:0.001',
+                'input_unit'            => 'required|string',
+                'karat'                 => 'required|in:24,22,21,20,18,14,10',
+                'rate_per_gram'         => 'required|numeric|min:0',
+                'wastage_type'          => 'required|in:percentage,fixed',
+                'wastage_value'         => 'required|numeric|min:0',
+                'making_charge_type'    => 'required|in:fixed,per_gram,percentage',
+                'making_charge_value'   => 'required|numeric|min:0',
+                'stone_weight'          => 'nullable|numeric|min:0',
+                'stone_unit'            => 'nullable|string',
                 'stone_price_per_carat' => 'nullable|numeric|min:0',
-                'tax_percentage' => 'nullable|numeric|min:0',
-                'discount_percentage' => 'nullable|numeric|min:0',
-                'ratti_type' => 'required|in:sunari,pakki',
-                'custom_charges' => 'nullable|numeric|min:0',
+                'stones'                => 'nullable|array',
+                'stones.*.weight'       => 'nullable|numeric|min:0',
+                'stones.*.unit'         => 'nullable|string',
+                'stones.*.price_per_carat' => 'nullable|numeric|min:0',
+                'stones.*.name'         => 'nullable|string',
+                'tax_percentage'        => 'nullable|numeric|min:0',
+                'discount_percentage'   => 'nullable|numeric|min:0',
+                'ratti_type'            => 'required|in:sunari,pakki',
+                'custom_charges'        => 'nullable|numeric|min:0',
+                'hallmark_charge'       => 'nullable|numeric|min:0',
+                'profit_margin'         => 'nullable|numeric|min:0|max:100',
+                'old_gold_weight'       => 'nullable|numeric|min:0',
+                'old_gold_karat'        => 'nullable|in:24,22,21,20,18,14,10',
             ]);
 
-            $breakdown = $this->calculator->calculatePriceBreakdown(
-                $validated['input_weight'],
-                $validated['input_unit'],
-                $validated['karat'],
-                $validated['rate_per_gram'],
-                $validated['wastage_type'],
-                $validated['wastage_value'],
-                $validated['making_charge_type'],
-                $validated['making_charge_value'],
-                $validated['stone_weight'] ?? 0,
-                $validated['stone_unit'] ?? 'carat',
-                $validated['stone_price_per_carat'] ?? 0,
-                $validated['tax_percentage'] ?? 0,
-                $validated['discount_percentage'] ?? 0,
-                $validated['ratti_type'],
-                $validated['custom_charges'] ?? 0
-            );
+            // Build stones array — support both single stone (legacy) and multiple
+            $stones = $validated['stones'] ?? [];
+            if (empty($stones) && !empty($validated['stone_weight']) && !empty($validated['stone_price_per_carat'])) {
+                $stones = [[
+                    'weight'          => $validated['stone_weight'],
+                    'unit'            => $validated['stone_unit'] ?? 'carat',
+                    'price_per_carat' => $validated['stone_price_per_carat'],
+                    'name'            => 'Stone',
+                ]];
+            }
 
-            return response()->json([
-                'success' => true,
-                'calculation_details' => $breakdown,
+            $breakdown = $this->calculator->calculateFullBreakdown([
+                'gross_weight'        => $validated['input_weight'],
+                'unit'                => $validated['input_unit'],
+                'karat'               => $validated['karat'],
+                'rate_per_gram'       => $validated['rate_per_gram'],
+                'wastage_type'        => $validated['wastage_type'],
+                'wastage_value'       => $validated['wastage_value'],
+                'making_charge_type'  => $validated['making_charge_type'],
+                'making_charge_value' => $validated['making_charge_value'],
+                'stones'              => $stones,
+                'stone_weight'        => $validated['stone_weight'] ?? 0,
+                'stone_unit'          => $validated['stone_unit'] ?? 'carat',
+                'tax_percentage'      => $validated['tax_percentage'] ?? 0,
+                'discount_percentage' => $validated['discount_percentage'] ?? 0,
+                'ratti_type'          => $validated['ratti_type'],
+                'custom_charges'      => $validated['custom_charges'] ?? 0,
+                'hallmark_charge'     => $validated['hallmark_charge'] ?? 0,
+                'profit_margin'       => $validated['profit_margin'] ?? 0,
+                'old_gold_weight'     => $validated['old_gold_weight'] ?? 0,
+                'old_gold_karat'      => $validated['old_gold_karat'] ?? 22,
             ]);
+
+            return response()->json(['success' => true, 'calculation_details' => $breakdown]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }

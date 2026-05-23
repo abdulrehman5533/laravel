@@ -139,9 +139,10 @@ class FinancialReportsController extends Controller
             $debitSum = $account->ledgerEntries->where('type', 'DEBIT')->sum('amount');
             $creditSum = $account->ledgerEntries->where('type', 'CREDIT')->sum('amount');
 
-            $type = strtoupper($account->account_type);
+            $type     = $account->account_type;
+            $category = strtoupper($account->account_category ?? '');
 
-            if (in_array($type, ['ASSET', 'EXPENSE'])) {
+            if (in_array($type, ['Asset', 'Expense'])) {
                 $balance = $account->opening_balance + $debitSum - $creditSum;
                 $debit = $balance > 0 ? $balance : 0;
                 $credit = $balance < 0 ? abs($balance) : 0;
@@ -202,13 +203,13 @@ class FinancialReportsController extends Controller
             $credits = $account->credits ?? 0;
 
             $balance = 0;
-            $type = strtoupper($account->account_type);
-            $category = strtoupper($account->account_category);
+            $type     = $account->account_type;
+            $category = strtoupper($account->account_category ?? '');
 
-            if ($type === 'REVENUE') {
+            if ($type === 'Income') {
                 $balance = $credits - $debits;
                 if ($balance != 0) {
-                    if (in_array($category, ['SALES', 'SERVICE'])) {
+                    if (in_array($category, ['SALES', 'SERVICE', 'MAKING CHARGES'])) {
                         $revenues[] = ['account_name' => $account->account_name, 'amount' => $balance];
                         $totalRevenue += $balance;
                     } else {
@@ -216,7 +217,7 @@ class FinancialReportsController extends Controller
                         $totalOther += $balance;
                     }
                 }
-            } elseif ($type === 'EXPENSE') {
+            } elseif ($type === 'Expense') {
                 $balance = $debits - $credits;
                 if ($balance != 0) {
                     if ($category === 'COGS') {
@@ -289,17 +290,17 @@ class FinancialReportsController extends Controller
         foreach ($accounts as $account) {
             $debits = $account->debits ?? 0;
             $credits = $account->credits ?? 0;
-            $type = strtoupper($account->account_type);
-            $category = strtoupper($account->account_category);
+            $type     = $account->account_type;
+            $category = strtoupper($account->account_category ?? '');
 
             $balance = 0;
-            if (in_array($type, ['ASSET', 'EXPENSE'])) {
+            if (in_array($type, ['Asset', 'Expense'])) {
                 $balance = $account->opening_balance + $debits - $credits;
             } else {
                 $balance = $account->opening_balance + $credits - $debits;
             }
 
-            if ($type === 'ASSET') {
+            if ($type === 'Asset') {
                 if ($balance != 0) {
                     $item = ['account_name' => $account->account_name, 'amount' => $balance];
                     if (in_array($category, ['CASH', 'BANK', 'RECEIVABLE', 'INVENTORY', 'TAX'])) {
@@ -314,7 +315,7 @@ class FinancialReportsController extends Controller
                     }
                     $totalAssets += $balance;
                 }
-            } elseif ($type === 'LIABILITY') {
+            } elseif ($type === 'Liability') {
                 if ($balance != 0) {
                     $item = ['account_name' => $account->account_name, 'amount' => $balance];
                     if (in_array($category, ['PAYABLE', 'TAX', 'CURRENT'])) {
@@ -326,14 +327,14 @@ class FinancialReportsController extends Controller
                     }
                     $totalLiabilities += $balance;
                 }
-            } elseif ($type === 'EQUITY') {
+            } elseif ($type === 'Equity') {
                 if ($balance != 0) {
                     $equity[] = ['account_name' => $account->account_name, 'amount' => $balance];
                     $totalEquity += $balance;
                 }
-            } elseif ($type === 'REVENUE') {
+            } elseif ($type === 'Income') {
                 $totalRev += $balance;
-            } elseif ($type === 'EXPENSE') {
+            } elseif ($type === 'Expense') {
                 $totalExp += $balance;
             }
         }

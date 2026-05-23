@@ -13,6 +13,38 @@ Route::get('/', function () {
 // Authentication routes (Breeze)
 require __DIR__.'/auth.php';
 
+// ==================== AI AGENT (PUBLIC / GUEST) ====================
+// Add explicit routes before the protected group so they work without login.
+// UI: /ai-agent/chat
+// Chat POST: /ai-agent/chat
+// Status GET: /ai-agent/status
+Route::prefix('ai-agent')->group(function () {
+    Route::get('/chat', [\App\Http\Controllers\AIAgentController::class, 'chat'])->name('ai-agent.chat.public');
+    Route::get('/professional-chat', [\App\Http\Controllers\AIAgentChatController::class, 'professionalChat'])->name('ai-agent.chat.professional');
+    Route::post('/chat', [\App\Http\Controllers\AIAgentController::class, 'processChat'])->name('ai-agent.chat.message.public');
+    Route::get('/status', [\App\Http\Controllers\AIAgentController::class, 'status'])->name('ai-agent.status.public');
+    Route::get('/analytics', [\App\Http\Controllers\AIAgentController::class, 'analytics'])->name('ai-agent.analytics.public');
+
+    // Protected AI Agent routes (require auth)
+    Route::middleware(['auth'])->group(function () {
+        Route::post('/chat/send', [\App\Http\Controllers\AIAgentChatController::class, 'sendMessage'])->name('ai-agent.chat.send');
+        Route::post('/chat/stream', [\App\Http\Controllers\AIAgentChatController::class, 'streamMessage'])->name('ai-agent.chat.stream');
+        Route::get('/conversations', [\App\Http\Controllers\AIAgentChatController::class, 'getConversations'])->name('ai-agent.conversations');
+        Route::get('/history/{id}', [\App\Http\Controllers\AIAgentChatController::class, 'getHistory'])->name('ai-agent.history');
+        Route::delete('/conversations/{id}', [\App\Http\Controllers\AIAgentChatController::class, 'clearConversation'])->name('ai-agent.conversation.clear');
+        Route::get('/commands', [\App\Http\Controllers\AIAgentChatController::class, 'getSupportedCommands'])->name('ai-agent.commands');
+        Route::get('/languages', [\App\Http\Controllers\AIAgentChatController::class, 'getSupportedLanguages'])->name('ai-agent.languages');
+        Route::get('/agent-status', [\App\Http\Controllers\AIAgentChatController::class, 'getAgentStatus'])->name('ai-agent.agent-status');
+
+        // Voice & TTS endpoints
+        Route::post('/voice-to-chat', [\App\Http\Controllers\AIAgentController::class, 'voiceToChat'])->name('ai-agent.voice-to-chat');
+        Route::post('/synthesize', [\App\Http\Controllers\AIAgentController::class, 'synthesizeSpeech'])->name('ai-agent.synthesize');
+
+        // File upload
+        Route::post('/upload', [\App\Http\Controllers\AIAgentApiController::class, 'uploadFile'])->name('ai-agent.upload');
+    });
+});
+
 // (No social login routes configured)
 
 // Public Invoice Route
@@ -33,19 +65,6 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
     Route::get('/subscription', [\App\Http\Controllers\SubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription/upgrade', [\App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
 
-
-    Route::get('/test-bi', function () {
-        try {
-            return (new \App\Services\BusinessIntelligenceService())->getProfitMargins();
-        } catch (\Exception $e) {
-            return [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ];
-        }
-    });
 
     // ==================== POS & SALES MODULE ====================
     Route::prefix('pos')->name('pos.')->middleware('permission:pos.view')->group(function () {
@@ -87,6 +106,16 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
 
         Route::get('mobile', [\App\Http\Controllers\API\MobilePOSController::class, 'index'])->name('mobile.index');
         Route::get('promotions', [\App\Http\Controllers\Marketing\PromotionController::class, 'index'])->name('promotions.index');
+
+        // ==================== POS EXTRA FEATURES ====================
+        Route::get('daily-summary', [\App\Http\Controllers\POS\POSDashboardController::class, 'dailySummary'])->name('daily-summary');
+        Route::get('outstanding-customers', [\App\Http\Controllers\POS\POSDashboardController::class, 'outstandingCustomers'])->name('outstanding-customers');
+        Route::get('sales-by-staff', [\App\Http\Controllers\POS\POSDashboardController::class, 'salesByStaff'])->name('sales-by-staff');
+        // Cashier Shifts
+        Route::get('shifts', [\App\Http\Controllers\POS\CashierShiftController::class, 'index'])->name('shifts.index');
+        Route::post('shifts/open', [\App\Http\Controllers\POS\CashierShiftController::class, 'open'])->name('shifts.open');
+        Route::post('shifts/{shift}/close', [\App\Http\Controllers\POS\CashierShiftController::class, 'close'])->name('shifts.close');
+        Route::get('shifts/{shift}', [\App\Http\Controllers\POS\CashierShiftController::class, 'show'])->name('shifts.show');
     });
 
     // ==================== CRM & CUSTOMER MANAGEMENT MODULE ====================
@@ -97,7 +126,15 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::get('customers/{customer}/interactions', [\App\Http\Controllers\CustomerController::class, 'interactions'])->name('customers.interactions');
         Route::post('customers/{customer}/add-interaction', [\App\Http\Controllers\CustomerController::class, 'addInteraction'])->name('customers.add-interaction');
         Route::get('interactions', [\App\Http\Controllers\CRM\InteractionController::class, 'index'])->name('interactions.index');
+        Route::post('interactions', [\App\Http\Controllers\CRM\InteractionController::class, 'store'])->name('interactions.store');
         Route::post('interactions/{interaction}/follow-up', [\App\Http\Controllers\CRM\InteractionController::class, 'addFollowUp'])->name('interactions.follow-up');
+        Route::post('interactions/{interaction}/close', [\App\Http\Controllers\CRM\InteractionController::class, 'close'])->name('interactions.close');
+        Route::get('loyalty', [\App\Http\Controllers\CRM\LoyaltyController::class, 'index'])->name('loyalty.index');
+        Route::post('loyalty/{customer}/update-points', [\App\Http\Controllers\CRM\LoyaltyController::class, 'updatePoints'])->name('loyalty.update-points');
+        Route::get('birthdays', [\App\Http\Controllers\CRM\CrmController::class, 'birthdays'])->name('birthdays');
+        Route::get('follow-ups', [\App\Http\Controllers\CRM\CrmController::class, 'followUps'])->name('follow-ups');
+        // Service job final charge update
+        Route::post('service/jobs/{job}/final-charge', [\App\Http\Controllers\Service\ServiceJobController::class, 'updateFinalCharge'])->name('service.jobs.final-charge');
     });
 
     // ==================== CUSTOMERS MODULE ====================
@@ -117,6 +154,46 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::get('/create', [\App\Http\Controllers\BuybackController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\BuybackController::class, 'store'])->name('store');
         Route::get('/{buyback}', [\App\Http\Controllers\BuybackController::class, 'show'])->name('show');
+        Route::post('/{buyback}/approve', [\App\Http\Controllers\BuybackController::class, 'approve'])->name('approve');
+        Route::post('/{buyback}/complete', [\App\Http\Controllers\BuybackController::class, 'complete'])->name('complete');
+    });
+
+    // ==================== GOLD SAVINGS SCHEME ====================
+    Route::prefix('gold-savings')->name('gold-savings.')->middleware(['auth'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\GoldSavingsController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\GoldSavingsController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\GoldSavingsController::class, 'store'])->name('store');
+        Route::get('/{scheme}', [\App\Http\Controllers\GoldSavingsController::class, 'show'])->name('show');
+        Route::post('/{scheme}/payment', [\App\Http\Controllers\GoldSavingsController::class, 'recordPayment'])->name('payment');
+        Route::post('/{scheme}/mature', [\App\Http\Controllers\GoldSavingsController::class, 'mature'])->name('mature');
+    });
+
+    // ==================== PRODUCTION & KARIGAR ====================
+    Route::prefix('production')->name('production.')->middleware(['auth'])->group(function () {
+        // BOM
+        Route::get('/bom', [\App\Http\Controllers\ProductionController::class, 'bomIndex'])->name('bom.index');
+        Route::get('/bom/create', [\App\Http\Controllers\ProductionController::class, 'bomCreate'])->name('bom.create');
+        Route::post('/bom', [\App\Http\Controllers\ProductionController::class, 'bomStore'])->name('bom.store');
+        Route::get('/bom/{bom}', [\App\Http\Controllers\ProductionController::class, 'bomShow'])->name('bom.show');
+        // Jobs
+        Route::get('/jobs', [\App\Http\Controllers\ProductionController::class, 'jobIndex'])->name('jobs.index');
+        Route::get('/jobs/create', [\App\Http\Controllers\ProductionController::class, 'jobCreate'])->name('jobs.create');
+        Route::post('/jobs', [\App\Http\Controllers\ProductionController::class, 'jobStore'])->name('jobs.store');
+        Route::get('/jobs/{job}', [\App\Http\Controllers\ProductionController::class, 'jobShow'])->name('jobs.show');
+        Route::post('/jobs/{job}/issue', [\App\Http\Controllers\ProductionController::class, 'jobIssue'])->name('jobs.issue');
+        Route::post('/jobs/{job}/receive', [\App\Http\Controllers\ProductionController::class, 'jobReceive'])->name('jobs.receive');
+        // Karigar Settlements
+        Route::get('/settlements', [\App\Http\Controllers\ProductionController::class, 'settlementIndex'])->name('settlements.index');
+        Route::get('/settlements/create', [\App\Http\Controllers\ProductionController::class, 'settlementCreate'])->name('settlements.create');
+        Route::post('/settlements', [\App\Http\Controllers\ProductionController::class, 'settlementStore'])->name('settlements.store');
+        Route::get('/settlements/{settlement}', [\App\Http\Controllers\ProductionController::class, 'settlementShow'])->name('settlements.show');
+        Route::post('/settlements/{settlement}/pay', [\App\Http\Controllers\ProductionController::class, 'settlementPay'])->name('settlements.pay');
+        // Refinery
+        Route::get('/refinery', [\App\Http\Controllers\ProductionController::class, 'refineryIndex'])->name('refinery.index');
+        Route::get('/refinery/create', [\App\Http\Controllers\ProductionController::class, 'refineryCreate'])->name('refinery.create');
+        Route::post('/refinery', [\App\Http\Controllers\ProductionController::class, 'refineryStore'])->name('refinery.store');
+        Route::get('/refinery/{batch}', [\App\Http\Controllers\ProductionController::class, 'refineryShow'])->name('refinery.show');
+        Route::post('/refinery/{batch}/receive', [\App\Http\Controllers\ProductionController::class, 'refineryReceive'])->name('refinery.receive');
     });
 
     // ==================== REPAIR & SERVICE MODULE ====================
@@ -135,6 +212,9 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::match(['get', 'post'], 'jobs/{job}/complete', [\App\Http\Controllers\Service\ServiceJobController::class, 'complete'])->name('jobs.complete');
         Route::match(['get', 'post'], 'jobs/{job}/deliver', [\App\Http\Controllers\Service\ServiceJobController::class, 'deliver'])->name('jobs.deliver');
         Route::post('jobs/{job}/receive-items', [\App\Http\Controllers\Service\ServiceJobController::class, 'receiveItems'])->name('jobs.receive-items');
+        Route::post('jobs/{job}/final-charge', [\App\Http\Controllers\Service\ServiceJobController::class, 'updateFinalCharge'])->name('jobs.final-charge');
+        Route::get('jobs/{job}/delivery-receipt', [\App\Http\Controllers\Service\ServiceJobController::class, 'deliveryReceipt'])->name('jobs.delivery-receipt');
+        Route::get('reports/monthly', [\App\Http\Controllers\Service\ServiceController::class, 'monthlyReport'])->name('reports.monthly');
 
         // Karigar Invoices
         Route::resource('invoices', \App\Http\Controllers\Service\KarigarInvoiceController::class)->names([
@@ -301,6 +381,15 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::get('stock-aging', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'stockAgingReport'])->name('stock-aging');
         Route::get('wastage-report', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'wastageReport'])->name('wastage-report');
         Route::get('multi-location-stock', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'multiLocationStock'])->name('multi-location-stock');
+        Route::get('stock-valuation', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'stockValuation'])->name('stock-valuation');
+        Route::get('reorder-list', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'reorderList'])->name('reorder-list');
+        Route::post('bulk-update', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::get('import', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'importForm'])->name('import');
+        Route::post('import', [\App\Http\Controllers\Inventory\InventoryProductController::class, 'importCsv'])->name('import.store');
+
+        // Categories & Purity
+        Route::resource('categories', \App\Http\Controllers\Inventory\CategoryController::class)->only(['index','store','update','destroy']);
+        Route::resource('purities', \App\Http\Controllers\Inventory\PurityController::class)->only(['index','store','update','destroy']);
 
         // Warehouses
         Route::resource('warehouses', \App\Http\Controllers\Inventory\WarehouseController::class);
@@ -436,6 +525,11 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         // ==================== GENERAL LEDGER
         Route::get('general-ledger/export-pdf', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'exportPdf'])->name('general-ledger.export-pdf');
         Route::get('general-ledger/export-excel', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'exportExcel'])->name('general-ledger.export-excel');
+        Route::get('general-ledger/coa', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'coaIndex'])->name('general-ledger.coa');
+        Route::post('general-ledger/coa', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'coaStore'])->name('general-ledger.coa.store');
+        Route::put('general-ledger/coa/{account}', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'coaUpdate'])->name('general-ledger.coa.update');
+        Route::get('general-ledger/journals', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'journalIndex'])->name('general-ledger.journals');
+        Route::post('general-ledger/journals', [\App\Http\Controllers\Accounts\GeneralLedgerController::class, 'journalStore'])->name('general-ledger.journals.store');
         Route::resource('general-ledger', \App\Http\Controllers\Accounts\GeneralLedgerController::class, ['only' => ['index', 'show']]);
 
         // ==================== ACCOUNTING DASHBOARD
@@ -492,6 +586,17 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::resource('cashbook', \App\Http\Controllers\CashbookController::class);
         Route::post('cashbook/{cashbook}/verify', [\App\Http\Controllers\CashbookController::class, 'verify'])->name('cashbook.verify');
         Route::post('cashbook/verify-all', [\App\Http\Controllers\CashbookController::class, 'verifyAll'])->name('cashbook.verify-all');
+        // Petty Cash
+        Route::resource('petty-cash', \App\Http\Controllers\Accounts\PettyCashController::class)->names([
+            'index'   => 'petty-cash.index',
+            'create'  => 'petty-cash.create',
+            'store'   => 'petty-cash.store',
+            'show'    => 'petty-cash.show',
+            'edit'    => 'petty-cash.edit',
+            'update'  => 'petty-cash.update',
+            'destroy' => 'petty-cash.destroy',
+        ]);
+        Route::post('petty-cash/{pettyCash}/add-entry', [\App\Http\Controllers\Accounts\PettyCashEntryController::class, 'store'])->name('petty-cash.entry.store');
         Route::get('expense/subcategories', [\App\Http\Controllers\ExpenseController::class, 'getSubcategories'])->name('expense.subcategories');
         Route::get('expense/export', [\App\Http\Controllers\ExpenseController::class, 'export'])->name('expense.export');
         Route::post('expense/{expense}/approve', [\App\Http\Controllers\ExpenseController::class, 'approve'])->name('expense.approve');
@@ -707,33 +812,6 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::post('reject/{id}', [\App\Http\Controllers\Workflow\WorkflowController::class, 'reject'])->name('reject');
     });
 
-    // ==================== ENTERPRISE ADMIN MODULES ====================
-    Route::prefix('admin')->name('admin.')->middleware(['permission:admin.view'])->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\EnterpriseAdminController::class, 'dashboard'])->name('dashboard');
-
-        // Workflow Management
-        Route::resource('workflows', \App\Http\Controllers\Workflow\WorkflowController::class);
-        Route::get('my-approvals', [\App\Http\Controllers\Workflow\WorkflowController::class, 'myApprovals'])->name('approvals');
-        Route::post('approve/{id}', [\App\Http\Controllers\Workflow\WorkflowController::class, 'approve'])->name('approve');
-        Route::post('reject/{id}', [\App\Http\Controllers\Workflow\WorkflowController::class, 'reject'])->name('reject');
-
-
-        // API Manager
-        Route::get('api', [\App\Http\Controllers\Admin\ApiManagerController::class, 'index'])->name('api.index');
-        Route::post('api/keys', [\App\Http\Controllers\Admin\ApiManagerController::class, 'storeKey'])->name('api.keys.store');
-        Route::post('api/keys/{apiKey}/rotate', [\App\Http\Controllers\Admin\ApiManagerController::class, 'rotate'])->name('api.keys.rotate');
-        Route::put('api/keys/{apiKey}', [\App\Http\Controllers\Admin\ApiManagerController::class, 'update'])->name('api.keys.update');
-        Route::delete('api/keys/{apiKey}', [\App\Http\Controllers\Admin\ApiManagerController::class, 'destroy'])->name('api.keys.destroy');
-
-
-        // Backup & Recovery
-        Route::get('backup', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backup.index');
-        Route::post('backup', [\App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backup.create');
-
-        // Notifications
-        Route::get('notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
-        Route::post('notifications/templates', [\App\Http\Controllers\Admin\NotificationController::class, 'storeTemplate'])->name('notifications.templates.store');
-    });
 
     // ==================== CRM & LOYALTY MODULE ====================
     Route::prefix('crm')->name('crm.')->middleware(['permission:crm.view'])->group(function () {
@@ -747,6 +825,27 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         Route::get('performance/{supplier}', [\App\Http\Controllers\Procurement\VendorRatingController::class, 'supplierPerformance'])->name('performance');
     });
 
+    // ==================== AI AGENT ROUTES ====================
+    Route::prefix('ai-agent')->name('ai-agent.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AIAgentController::class, 'index'])->name('index');
+        Route::get('/chat', [\App\Http\Controllers\AIAgentChatController::class, 'index'])->name('chat.index');
+        Route::get('/professional-chat', [\App\Http\Controllers\AIAgentChatController::class, 'professionalChat'])->name('chat.professional');
+        Route::post('/chat/message', [\App\Http\Controllers\AIAgentChatController::class, 'sendMessage'])->name('chat.message');
+        Route::post('/chat/voice', [\App\Http\Controllers\AIAgentChatController::class, 'transcribeVoice'])->name('chat.voice');
+        Route::post('/chat/voice-to-chat', [\App\Http\Controllers\AIAgentChatController::class, 'voiceToChat'])->name('chat.voice-to-chat');
+        Route::post('/chat/synthesize', [\App\Http\Controllers\AIAgentChatController::class, 'synthesizeSpeech'])->name('chat.synthesize');
+        Route::post('/chat/voice-to-voice', [\App\Http\Controllers\AIAgentChatController::class, 'voiceToVoice'])->name('chat.voice-to-voice');
+        Route::get('/chat/status', [\App\Http\Controllers\AIAgentChatController::class, 'getAgentStatus'])->name('chat.status');
+        Route::get('/chat/languages', [\App\Http\Controllers\AIAgentChatController::class, 'getSupportedLanguages'])->name('chat.languages');
+        Route::post('/voice', [\App\Http\Controllers\AIAgentController::class, 'processVoice'])->name('voice');
+        Route::post('/chat', [\App\Http\Controllers\AIAgentController::class, 'processChat'])->name('chat');
+        Route::post('/voice-to-chat', [\App\Http\Controllers\AIAgentController::class, 'voiceToChat'])->name('voice-to-chat');
+        Route::post('/synthesize', [\App\Http\Controllers\AIAgentController::class, 'synthesizeSpeech'])->name('synthesize');
+        Route::post('/voice-to-voice', [\App\Http\Controllers\AIAgentController::class, 'voiceToVoiceAutomation'])->name('voice-to-voice');
+        Route::get('/status', [\App\Http\Controllers\AIAgentController::class, 'getAgentStatus'])->name('status');
+        Route::get('/languages', [\App\Http\Controllers\AIAgentController::class, 'getSupportedLanguages'])->name('languages');
+    });
+
     // ==================== API ROUTES (for AJAX) ====================
     Route::prefix('api')->name('api.')->group(function () {
         Route::post('branches', [\App\Http\Controllers\API\BranchController::class, 'store'])->name('branches.store');
@@ -758,7 +857,7 @@ Route::middleware(['auth', \App\Http\Middleware\IdleSessionTimeout::class, \App\
         // Tab close logout route (CSRF-exempt for sendBeacon)
         Route::post('tab-close-logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'tabCloseLogout'])
             ->name('logout.tab-close')
-            ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+            ->middleware('auth');
 
         // Mobile POS API
         Route::get('mobile/products', [\App\Http\Controllers\API\MobilePOSController::class, 'searchProducts']);

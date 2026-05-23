@@ -165,30 +165,48 @@
                         <div class="tab-pane fade" id="attendance" role="tabpanel">
                             <h5 class="mb-4">Recent Attendance (Last 30 Days)</h5>
                             <div class="table-responsive">
-                                <table class="table table-sm table-flush">
-                                    <thead class="thead-light">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>Date</th>
-                                            <th>Clock In</th>
-                                            <th>Clock Out</th>
+                                            <th>Check In</th>
+                                            <th>Check Out</th>
                                             <th>Status</th>
-                                            <th>Duration</th>
+                                            <th>Hours</th>
+                                            <th>Late</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($employee->attendances as $attendance)
+                                        @forelse($attendances as $attendance)
                                         <tr>
-                                            <td>{{ $attendance->date->format('d M Y') }}</td>
-                                            <td>{{ $attendance->clock_in ? $attendance->clock_in->format('h:i A') : '-' }}</td>
-                                            <td>{{ $attendance->clock_out ? $attendance->clock_out->format('h:i A') : '-' }}</td>
+                                            <td>{{ $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('d M Y') : '-' }}</td>
+                                            <td>{{ $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('h:i A') : '-' }}</td>
+                                            <td>{{ $attendance->check_out_time ? \Carbon\Carbon::parse($attendance->check_out_time)->format('h:i A') : '-' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'late' ? 'warning' : 'danger') }}">
-                                                    {{ ucfirst($attendance->status) }}
+                                                <span class="badge bg-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'late' ? 'warning' : 'secondary') }}">
+                                                    {{ ucfirst($attendance->status ?? 'N/A') }}
                                                 </span>
                                             </td>
                                             <td>{{ $attendance->working_hours }}h</td>
+                                            <td>
+                                                @if($attendance->late_flag)
+                                                    <span class="badge bg-warning">Late</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
                                         </tr>
-                                        @endforeach
+                                        @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-3">
+                                                @if(!$employee->user_id)
+                                                    <i class="fas fa-info-circle me-1"></i> No system user linked. Attendance cannot be tracked.
+                                                @else
+                                                    No attendance records found.
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -198,7 +216,7 @@
                         <div class="tab-pane fade" id="leaves" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5>Leave History</h5>
-                                <a href="{{ route('hr.leaves.create', ['employee_id' => $employee->id]) }}" class="btn btn-primary btn-sm">Apply Leave</a>
+                                <a href="{{ route('hr.leave.index') }}" class="btn btn-primary btn-sm">Apply Leave</a>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-flush">

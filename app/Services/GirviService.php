@@ -258,16 +258,28 @@ class GirviService
                     $photoPath = $items[$index]['item_photo']->store('girvi/items', 'public');
                 }
 
-                $girviItem = $girvi->items()->create(array_merge($pItem, [
+                $girviItem = $girvi->items()->create([
                     'inventory_product_id' => $items[$index]['inventory_product_id'] ?? null,
-                    'item_photo' => $photoPath,
-                    'locker_location' => $items[$index]['locker_location'] ?? null,
-                    'bag_number' => $items[$index]['bag_number'] ?? null,
-                    'box_number' => $items[$index]['box_number'] ?? null,
-                    'tag_number' => $items[$index]['tag_number'] ?? null,
-                ]));
+                    'item_name'      => $pItem['item_name'] ?? null,
+                    'item_type'      => $pItem['item_type'] ?? 'Gold',
+                    'gross_weight'   => $pItem['gross_weight'] ?? 0,
+                    'stone_weight'   => $pItem['stone_weight'] ?? 0,
+                    'net_weight'     => $pItem['net_weight'] ?? 0,
+                    'fine_weight'    => $pItem['fine_weight'] ?? 0,
+                    'purity'         => $pItem['purity'] ?? '22K',
+                    'valuation_rate' => $pItem['valuation_rate'] ?? 0,
+                    'estimated_value'=> $pItem['estimated_value'] ?? 0,
+                    'item_condition' => $pItem['item_condition'] ?? 'Good',
+                    'description'    => $pItem['description'] ?? null,
+                    'item_photo'     => $photoPath,
+                    'locker_location'=> $items[$index]['locker_location'] ?? null,
+                    'bag_number'     => $items[$index]['bag_number'] ?? null,
+                    'box_number'     => $items[$index]['box_number'] ?? null,
+                    'tag_number'     => $items[$index]['tag_number'] ?? null,
+                ]);
 
                 // Update Inventory if linked
+                $product = null;
                 if ($girviItem->inventory_product_id) {
                     $product = \App\Models\InventoryProduct::find($girviItem->inventory_product_id);
                     if ($product) {
@@ -286,20 +298,20 @@ class GirviService
                 $barcodeData = $this->barcodeService->generateGirviBarcode($girvi->id, $girviItem->id);
                 $girviItem->update([
                     'barcode' => $barcodeData['value'],
-                    'qr_code' => $barcodeData['value'], // Use same value for QR code for now
+                    'qr_code' => $barcodeData['value'],
                 ]);
 
-                // Purity Override Audit Log for Girvi
-                if ($product && isset($item['purity']) && $product->purity) {
+                // Purity Override Audit Log for Girvi (only if product exists)
+                if ($product && isset($items[$index]['purity']) && $product->purity) {
                     $oldPurity = (float) filter_var($product->purity->name, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-                    $newPurity = $this->parsePurity($item['purity']);
+                    $newPurity = $this->parsePurity($items[$index]['purity']);
 
                     if ($oldPurity != $newPurity) {
                         \App\Models\PurityOverrideLog::logOverride(
                             $girviItem,
                             $oldPurity,
                             $newPurity,
-                            $item['purity_override_reason'] ?? 'Manual override during Girvi Pledge'
+                            $items[$index]['purity_override_reason'] ?? 'Manual override during Girvi Pledge'
                         );
                     }
                 }

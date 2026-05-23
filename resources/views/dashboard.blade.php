@@ -233,6 +233,13 @@
                         <span>My Attendance & Leave</span>
                     </a>
                 </div>
+                <div class="col-md-3">
+                    <a href="{{ route('ai-agent.chat') }}" class="quick-action-btn" title="AI Automation Agent - Chat, Voice, Analytics">
+                        <i class="fas fa-brain text-success" style="font-size: 1.8rem;"></i>
+                        <span>AI Agent</span>
+                        <small class="text-muted" style="font-size: 0.7rem; margin-top: 4px;">Chat • Voice • Analytics</small>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

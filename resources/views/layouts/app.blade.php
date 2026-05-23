@@ -441,6 +441,36 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('inventory.stock-valuation') }}" class="nav-link {{ request()->routeIs('inventory.stock-valuation') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-coins"></i>
+                            <span>Stock Valuation</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inventory.reorder-list') }}" class="nav-link {{ request()->routeIs('inventory.reorder-list') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Reorder List</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inventory.import') }}" class="nav-link {{ request()->routeIs('inventory.import*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-file-csv"></i>
+                            <span>Import Products</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inventory.categories.index') }}" class="nav-link {{ request()->routeIs('inventory.categories.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-tags"></i>
+                            <span>Categories</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('inventory.purities.index') }}" class="nav-link {{ request()->routeIs('inventory.purities.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-star"></i>
+                            <span>Purity Levels</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('inventory.warehouses.index') }}" class="nav-link {{ request()->routeIs('inventory.warehouses.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
                             <i class="fas fa-warehouse"></i>
                             <span>Warehouse & Logistics</span>
@@ -526,6 +556,30 @@
                         <a href="{{ route('pos.mobile.index') }}" class="nav-link {{ request()->routeIs('pos.mobile.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
                             <i class="fas fa-mobile-alt"></i>
                             <span>Mobile POS</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('pos.daily-summary') }}" class="nav-link {{ request()->routeIs('pos.daily-summary') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Daily Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('pos.outstanding-customers') }}" class="nav-link {{ request()->routeIs('pos.outstanding-customers') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-user-clock"></i>
+                            <span>Outstanding</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('pos.sales-by-staff') }}" class="nav-link {{ request()->routeIs('pos.sales-by-staff') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Sales by Staff</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('pos.shifts.index') }}" class="nav-link {{ request()->routeIs('pos.shifts.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-cash-register"></i>
+                            <span>Cashier Shifts</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -631,6 +685,18 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('accounts.general-ledger.journals') }}" class="nav-link {{ request()->routeIs('accounts.general-ledger.journals*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-pen-nib"></i>
+                            <span>Journal Entries</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('accounts.general-ledger.coa') }}" class="nav-link {{ request()->routeIs('accounts.general-ledger.coa*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-list-alt"></i>
+                            <span>Chart of Accounts</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('accounts.financial-reports.trial-balance') }}" class="nav-link {{ request()->routeIs('accounts.financial-reports.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
                             <i class="fas fa-file-invoice"></i>
                             <span>Financial Reports</span>
@@ -646,6 +712,12 @@
                         <a href="{{ route('accounts.cashbook.index') }}" class="nav-link {{ request()->routeIs('accounts.cashbook.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
                             <i class="fas fa-money-bill"></i>
                             <span>Cashbook</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('accounts.petty-cash.index') }}" class="nav-link {{ request()->routeIs('accounts.petty-cash.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
+                            <i class="fas fa-coins"></i>
+                            <span>Petty Cash</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -711,6 +783,31 @@
                 @endcan
 
                 <!-- Service & Repair Module -->
+                {{-- Buyback --}}
+                <li class="nav-item">
+                    <a href="{{ route('buyback.index') }}" class="nav-link {{ request()->routeIs('buyback.*') ? 'active' : '' }}">
+                        <i class="fas fa-recycle"></i><span>Buyback / Old Gold</span>
+                    </a>
+                </li>
+                {{-- Gold Savings --}}
+                <li class="nav-item">
+                    <a href="{{ route('gold-savings.index') }}" class="nav-link {{ request()->routeIs('gold-savings.*') ? 'active' : '' }}">
+                        <i class="fas fa-piggy-bank"></i><span>Gold Savings Scheme</span>
+                    </a>
+                </li>
+                {{-- Production --}}
+                <li class="nav-item">
+                    <button class="nav-link w-100 text-start {{ request()->routeIs('production.*') ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productionMenu">
+                        <i class="fas fa-industry"></i><span>Production & Karigar</span>
+                        <i class="fas fa-chevron-down ms-auto" style="font-size:0.75rem"></i>
+                    </button>
+                </li>
+                <ul class="list-unstyled ps-3 collapse {{ request()->routeIs('production.*') ? 'show' : '' }}" id="productionMenu">
+                    <li class="nav-item"><a href="{{ route('production.jobs.index') }}" class="nav-link {{ request()->routeIs('production.jobs.*') ? 'active' : '' }}" style="font-size:0.9rem"><i class="fas fa-tasks"></i><span>Production Jobs</span></a></li>
+                    <li class="nav-item"><a href="{{ route('production.bom.index') }}" class="nav-link {{ request()->routeIs('production.bom.*') ? 'active' : '' }}" style="font-size:0.9rem"><i class="fas fa-clipboard-list"></i><span>Bill of Materials</span></a></li>
+                    <li class="nav-item"><a href="{{ route('production.settlements.index') }}" class="nav-link {{ request()->routeIs('production.settlements.*') ? 'active' : '' }}" style="font-size:0.9rem"><i class="fas fa-handshake"></i><span>Karigar Settlements</span></a></li>
+                    <li class="nav-item"><a href="{{ route('production.refinery.index') }}" class="nav-link {{ request()->routeIs('production.refinery.*') ? 'active' : '' }}" style="font-size:0.9rem"><i class="fas fa-fire"></i><span>Refinery Batches</span></a></li>
+                </ul>
                 @can('service.view')
                 <li class="nav-item">
                     <button class="nav-link w-100 text-start {{ request()->routeIs('service.*') ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#serviceMenu" aria-expanded="{{ request()->routeIs('service.*') ? 'true' : 'false' }}">
@@ -859,43 +956,6 @@
                 </ul>
                 @endcan
 
-                @can('admin.view')
-                <li class="nav-item">
-                    <button class="nav-link w-100 text-start {{ request()->routeIs('admin.*') ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#adminMenu">
-                        <i class="fas fa-cogs"></i>
-                        <span>Enterprise Admin</span>
-                        <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem;"></i>
-                    </button>
-                </li>
-                <ul class="list-unstyled ps-3 collapse {{ request()->routeIs('admin.*') ? 'show' : '' }}" id="adminMenu">
-                    <li class="nav-item">
-                        <a href="{{ route('admin.workflows.index') }}" class="nav-link {{ request()->routeIs('admin.workflows.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
-                            <i class="fas fa-project-diagram"></i>
-                            <span>Workflow & Approvals</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="{{ route('admin.api.index') }}" class="nav-link {{ request()->routeIs('admin.api.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
-                            <i class="fas fa-code"></i>
-                            <span>API Manager</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="{{ route('admin.backup.index') }}" class="nav-link {{ request()->routeIs('admin.backup.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
-                            <i class="fas fa-database"></i>
-                            <span>Backup & Recovery</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}" style="font-size: 0.9rem;">
-                            <i class="fas fa-bell"></i>
-                            <span>Notifications Config</span>
-                        </a>
-                    </li>
-                </ul>
-                @endcan
             </ul>
         </div>
         

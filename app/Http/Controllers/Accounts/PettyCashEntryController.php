@@ -34,7 +34,7 @@ class PettyCashEntryController extends Controller
 
         PettyCashEntry::create($validated);
 
-        return redirect()->route('accounts.pettycash.show', $pettycash)->with('success', 'Petty cash entry requested');
+        return redirect()->route('accounts.petty-cash.show', $pettycash)->with('success', 'Petty cash entry requested');
     }
 
     public function approve(Request $request, PettyCashEntry $entry): RedirectResponse

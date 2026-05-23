@@ -1,168 +1,115 @@
-# **Jewelry Management System: Technical & Deployment Guide (A to Z)**
+# 🚀 AI Agent - Deployment Guide
 
-This guide provides a comprehensive overview of the technical setup, library management, authentication architecture, and deployment procedures for the **Jewelry Management System (MAGIA LUPOS)**.
-
----
-
-## **1. Library & Package Management**
-
-### **Backend (Composer)**
-The backend uses **Composer** to manage PHP libraries.
-
-| **Package** | **Command to Install** | **Purpose** |
-| :--- | :--- | :--- |
-| **Laravel Framework** | `composer install` | Core application framework. |
-| **Spatie Permissions** | `composer require spatie/laravel-permission` | Role-Based Access Control (RBAC). |
-| **Laravel DOMPDF** | `composer require barryvdh/laravel-dompdf` | PDF generation for invoices/reports. |
-| **Laravel Excel** | `composer require maatwebsite/excel` | Excel/CSV export and import. |
-| **Laravel Tinker** | `composer require laravel/tinker` | Interactive shell for debugging. |
-
-### **Frontend (NPM)**
-The frontend uses **NPM/Vite** for asset compilation.
-
-| **Package** | **Command to Install** | **Purpose** |
-| :--- | :--- | :--- |
-| **Bootstrap 5** | `npm install bootstrap @popperjs/core` | UI Framework. |
-| **Tailwind CSS** | `npm install tailwindcss @tailwindcss/vite` | Modern utility-first CSS. |
-| **Chart.js** | `npm install chart.js` | Interactive data charts. |
-| **Axios** | `npm install axios` | HTTP requests for AJAX/APIs. |
+> **Production میں deploy کرنے کے لیے مکمل گائیڈ**
 
 ---
 
-## **2. Authentication & Session Architecture**
+## 📋 Pre-Deployment Checklist
 
-### **Authentication (Auth)**
-- **Type**: Laravel Breeze (Session-based Eloquent authentication).
-- **Guard**: `web` (Uses session driver).
-- **Provider**: `users` (Eloquent model: `App\Models\User`).
-- **Security**: 
-  - **BCRYPT**: Passwords are hashed using BCRYPT with 12 rounds.
-  - **CSRF**: All POST requests are protected by Cross-Site Request Forgery tokens.
+### ✅ Code
+- [ ] تمام files موجود ہیں
+- [ ] تمام migrations تیار ہیں
+- [ ] تمام routes شامل ہیں
+- [ ] تمام services registered ہیں
 
-### **Session Management**
-- **Driver**: `database` (Sessions are stored in the `sessions` table for persistence and better control).
-- **Lifetime**: 120 minutes (configurable via `.env`).
-- **Encryption**: Optional (defaults to `false`).
-- **Security Flags**:
-  - `http_only`: `true` (Prevents JS access to session cookies).
-  - `expire_on_close`: `true` (Sessions expire when the browser is closed).
-  - `same_site`: `lax` (Prevents CSRF while maintaining usability).
+### ✅ Configuration
+- [ ] .env file configured ہے
+- [ ] API keys موجود ہیں
+- [ ] Database configured ہے
+- [ ] Cache configured ہے
+
+### ✅ Security
+- [ ] HTTPS enabled ہے
+- [ ] CORS configured ہے
+- [ ] Rate limiting enabled ہے
+- [ ] Input validation active ہے
+
+### ✅ Database
+- [ ] Migrations run ہو چکے ہیں
+- [ ] Tables created ہیں
+- [ ] Indexes created ہیں
+- [ ] Backups taken ہیں
 
 ---
 
-## **3. Complete Command Reference**
+## 🔧 Step-by-Step Deployment
 
-### **Project Setup Commands**
+### Step 1: Code Deployment
 ```bash
-# Clone the repository
-git clone <repository_url>
+# Repository سے latest code pull کریں
+git pull origin main
 
-# Install PHP dependencies
-composer install
+# Dependencies install کریں
+composer install --no-dev
 
-# Install JS dependencies
-npm install
+# Node dependencies (اگر ضروری ہو)
+npm install --production
+```
 
-# Generate Application Key
+### Step 2: Environment Setup
+```bash
+# .env file copy کریں
+cp .env.example .env
+
+# Application key generate کریں
 php artisan key:generate
 
-# Build frontend assets
-npm run build
+# Configure کریں:
+# - Database credentials
+# - API keys (Groq, Google, SMS, WhatsApp)
+# - Cache driver
+# - Mail configuration
 ```
 
-### **Database Commands**
+### Step 3: Database Setup
 ```bash
-# Run all migrations
-php artisan migrate
+# Migrations run کریں
+php artisan migrate --force
 
-# Refresh database and run all seeders (Fresh start)
-php artisan migrate:fresh --seed
+# Seeders run کریں (اگر ضروری ہو)
+php artisan db:seed
 
-# Run specific seeder
-php artisan db:seed --class=RolesAndPermissionsSeeder
+# Database optimize کریں
+php artisan optimize
 ```
 
-### **Development & Maintenance**
+### Step 4: Cache & Config
 ```bash
-# Clear all caches (Config, Route, View, Cache)
-php artisan optimize:clear
-
-# Link storage directory for file uploads
-php artisan storage:link
-
-# Start development server
-php artisan serve
-
-# Enter interactive shell
-php artisan tinker
-```
-
----
-
-## **4. A to Z Deployment Guide**
-
-### **Prerequisites**
-- PHP 8.2 or higher
-- MySQL 8.0 or MariaDB 10.4+
-- Web Server (Apache/Nginx)
-- SSL Certificate (Recommended for security)
-
-### **Step 1: Server Preparation**
-Ensure the following PHP extensions are installed:
-`bcmath`, `ctype`, `curl`, `dom`, `fileinfo`, `gd`, `json`, `mbstring`, `openssl`, `pcre`, `pdo`, `tokenizer`, `xml`.
-
-### **Step 2: Upload and Permissions**
-1.  Upload the project to the server (e.g., `/var/www/html/jewellery`).
-2.  Set directory permissions:
-    ```bash
-    chown -R www-data:www-data /var/www/html/jewellery
-    chmod -R 775 /var/www/html/jewellery/storage
-    chmod -R 775 /var/www/html/jewellery/bootstrap/cache
-    ```
-
-### **Step 3: Environment Configuration**
-Edit the `.env` file on the server:
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.com
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=your_db_name
-DB_USERNAME=your_db_user
-DB_PASSWORD=your_db_password
-
-SESSION_DRIVER=database
-QUEUE_CONNECTION=database
-```
-
-### **Step 4: Production Optimization**
-Run these commands on the production server:    
-```bash
-# Install production dependencies
-composer install --optimize-autoloader --no-dev
-
-# Cache configurations and routes
+# Config cache کریں
 php artisan config:cache
+
+# Route cache کریں
 php artisan route:cache
+
+# View cache کریں
 php artisan view:cache
 
-# Compile production assets
-npm install
-npm run build
+# Cache warm up کریں
+php artisan cache:clear
 ```
 
-### **Step 5: Web Server Configuration (Nginx Example)**
+### Step 5: File Permissions
+```bash
+# Storage directory permissions
+chmod -R 775 storage
+chmod -R 775 bootstrap/cache
+
+# Public directory permissions
+chmod -R 755 public
+```
+
+### Step 6: Web Server Setup
+
+#### Nginx Configuration
 ```nginx
 server {
     listen 80;
-    server_name yourdomain.com;
-    root /var/www/html/jewellery/public;
+    server_name your-domain.com;
+    root /path/to/public;
 
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
 
     index index.php;
 
@@ -171,6 +118,11 @@ server {
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
 
     location ~ \.php$ {
         fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
@@ -184,13 +136,339 @@ server {
 }
 ```
 
+#### Apache Configuration
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    DocumentRoot /path/to/public
+
+    <Directory /path/to/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule ^ index.php [QSA,L]
+    </IfModule>
+</VirtualHost>
+```
+
+### Step 7: SSL Certificate
+```bash
+# Let's Encrypt سے certificate حاصل کریں
+sudo certbot certonly --webroot -w /path/to/public -d your-domain.com
+
+# Nginx میں SSL configure کریں
+listen 443 ssl http2;
+ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+```
+
+### Step 8: Monitoring & Logging
+```bash
+# Log rotation setup
+sudo nano /etc/logrotate.d/laravel
+
+# Supervisor configuration (for queue workers)
+sudo nano /etc/supervisor/conf.d/laravel-worker.conf
+```
+
 ---
 
-## **5. Initial Data (Login Details)**
-After running `php artisan migrate --seed`, use the following default credentials to login:
-- **Email**: `sariapratab@gmail.com`
-- **Password**: `Sicl@3241`
+## 📊 Production Configuration
+
+### .env Production Settings
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=your-db-host
+DB_PORT=3306
+DB_DATABASE=your_db
+DB_USERNAME=your_user
+DB_PASSWORD=your_password
+
+# Cache
+CACHE_DRIVER=redis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+# Queue
+QUEUE_CONNECTION=redis
+
+# Mail
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+
+# API Keys
+GROQ_API_KEY=your_groq_key
+GOOGLE_CLOUD_API_KEY=your_google_key
+SMS_API_KEY=your_sms_key
+WHATSAPP_API_KEY=your_whatsapp_key
+
+# Security
+AI_AGENT_SECRET_KEY=your_secret_key
+AI_AGENT_IP_WHITELIST=127.0.0.1
+```
 
 ---
-*Guide Version: 1.0.0*  
-*Last Updated: January 22, 2026*
+
+## 🔒 Security Hardening
+
+### 1. Firewall Configuration
+```bash
+# UFW firewall setup
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### 2. SSH Security
+```bash
+# SSH key-based authentication
+ssh-keygen -t rsa -b 4096
+
+# Disable password authentication
+sudo nano /etc/ssh/sshd_config
+# PasswordAuthentication no
+# PermitRootLogin no
+
+sudo systemctl restart ssh
+```
+
+### 3. Application Security
+```bash
+# Hide Laravel version
+# In .env: APP_DEBUG=false
+
+# Set secure headers
+# Already configured in nginx/apache
+
+# Enable CSRF protection
+# Already enabled in Laravel
+
+# Rate limiting
+# Already configured in routes
+```
+
+### 4. Database Security
+```bash
+# Create database user with limited privileges
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'strong_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON database_name.* TO 'app_user'@'localhost';
+FLUSH PRIVILEGES;
+
+# Backup database regularly
+mysqldump -u root -p database_name > backup.sql
+```
+
+---
+
+## 📈 Performance Optimization
+
+### 1. Database Optimization
+```bash
+# Add indexes
+php artisan tinker
+> DB::statement('ALTER TABLE ai_agent_logs ADD INDEX idx_user_id (user_id)');
+> DB::statement('ALTER TABLE notification_histories ADD INDEX idx_user_id (user_id)');
+```
+
+### 2. Query Optimization
+```php
+// Use eager loading
+$logs = AIAgentLog::with('user')->get();
+
+// Use select specific columns
+$logs = AIAgentLog::select('id', 'message', 'intent')->get();
+
+// Use pagination
+$logs = AIAgentLog::paginate(50);
+```
+
+### 3. Caching Strategy
+```bash
+# Redis configuration
+CACHE_DRIVER=redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# Cache warming
+php artisan cache:clear
+php artisan config:cache
+```
+
+### 4. CDN Setup
+```bash
+# Configure CDN for static assets
+# Update APP_URL to CDN URL for assets
+```
+
+---
+
+## 🔍 Monitoring & Maintenance
+
+### 1. Health Checks
+```bash
+# Create health check endpoint
+php artisan make:command HealthCheck
+
+# Run periodic health checks
+* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+```
+
+### 2. Log Monitoring
+```bash
+# Monitor logs
+tail -f storage/logs/laravel.log
+
+# Log rotation
+sudo logrotate -f /etc/logrotate.d/laravel
+```
+
+### 3. Database Maintenance
+```bash
+# Regular backups
+0 2 * * * mysqldump -u root -p database_name > /backups/backup_$(date +\%Y\%m\%d).sql
+
+# Optimize tables
+OPTIMIZE TABLE ai_agent_logs;
+OPTIMIZE TABLE notification_histories;
+```
+
+### 4. Performance Monitoring
+```bash
+# Monitor server resources
+top
+htop
+df -h
+free -h
+
+# Monitor application
+php artisan tinker
+> \App\Services\AIAgentLoggingService::getStatistics(30);
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### Issue: 500 Error
+```bash
+# Check logs
+tail -f storage/logs/laravel.log
+
+# Check permissions
+chmod -R 775 storage bootstrap/cache
+
+# Clear cache
+php artisan cache:clear
+php artisan config:clear
+```
+
+### Issue: Database Connection Error
+```bash
+# Check database credentials
+php artisan tinker
+> DB::connection()->getPdo();
+
+# Check database server
+mysql -u user -p -h host
+```
+
+### Issue: API Rate Limiting
+```bash
+# Check rate limit configuration
+php artisan tinker
+> config('app.rate_limit');
+
+# Adjust if needed
+RATE_LIMIT=100
+```
+
+### Issue: Cache Not Working
+```bash
+# Check Redis connection
+redis-cli ping
+
+# Restart Redis
+sudo systemctl restart redis-server
+
+# Clear cache
+php artisan cache:clear
+```
+
+---
+
+## 📋 Post-Deployment Checklist
+
+- [ ] تمام endpoints کام کر رہے ہیں
+- [ ] Database migrations successful ہیں
+- [ ] Caching working ہے
+- [ ] Logging working ہے
+- [ ] Security headers set ہیں
+- [ ] SSL certificate installed ہے
+- [ ] Backups configured ہیں
+- [ ] Monitoring active ہے
+- [ ] Performance acceptable ہے
+- [ ] Users can access application
+
+---
+
+## 🎯 Maintenance Schedule
+
+### Daily
+- [ ] Check logs
+- [ ] Monitor performance
+- [ ] Check disk space
+
+### Weekly
+- [ ] Database backup
+- [ ] Security updates
+- [ ] Performance review
+
+### Monthly
+- [ ] Full system audit
+- [ ] Database optimization
+- [ ] Cache cleanup
+
+### Quarterly
+- [ ] Security assessment
+- [ ] Performance tuning
+- [ ] Capacity planning
+
+---
+
+## 📞 Support
+
+### Emergency Contacts
+- Database Admin: [contact]
+- Server Admin: [contact]
+- Security Team: [contact]
+
+### Documentation
+- API Documentation: /docs/api
+- Deployment Guide: This file
+- Troubleshooting: /docs/troubleshooting
+
+---
+
+**🚀 Deployment Complete!**
+
+**آپ کا AI Agent اب Production میں ہے! 🎉**
+
+**خوش قسمتی! 🎊**

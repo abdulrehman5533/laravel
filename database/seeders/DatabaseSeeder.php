@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\Employee;
 use App\Models\GoldRate;
 use App\Models\InventoryProduct;
 use App\Models\ProductCategory;
@@ -241,6 +242,26 @@ class DatabaseSeeder extends Seeder
                 'image_path' => 'products/xtqoYmy6dW55e4lIxdjUu9WNRtAUlkh8eFTOLKUX.jpg',
                 'is_primary' => true,
                 'sort_order' => 0,
+            ]
+        );
+
+        // Create sample employees
+        $employee = Employee::firstOrCreate(
+            ['email' => 'ismail@example.com'],
+            [
+                'employee_code' => 'EMP0001',
+                'first_name' => 'Ismail',
+                'last_name' => 'Oski',
+                'email' => 'ismail@example.com',
+                'phone' => '+919876543220',
+                'gender' => 'male',
+                'address' => 'Employee Address',
+                'department' => 'Sales',
+                'designation' => 'Sales Executive',
+                'joining_date' => now()->toDateString(),
+                'base_salary' => 50000,
+                'status' => 'active',
+                'branch_id' => $branch->id,
             ]
         );
 

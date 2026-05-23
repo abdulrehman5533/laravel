@@ -93,14 +93,22 @@ class EmployeeController extends Controller
             'loans',
             'expenses',
             'shifts',
-            'attendances' => fn($q) => $q->orderBy('date', 'desc')->limit(30),
             'leaveApplications' => fn($q) => $q->orderBy('start_date', 'desc'),
             'salaryStructures.component',
             'karigarRates',
             'salesCommissionRates',
         ]);
 
-        return view('hr.employees.show', compact('employee'));
+        // Load attendances separately using correct column name
+        $attendances = collect();
+        if ($employee->user_id) {
+            $attendances = \App\Models\Attendance::where('user_id', $employee->user_id)
+                ->orderBy('check_in_time', 'desc')
+                ->limit(30)
+                ->get();
+        }
+
+        return view('hr.employees.show', compact('employee', 'attendances'));
     }
 
     public function edit(Employee $employee)

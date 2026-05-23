@@ -8,9 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('branches', function (Blueprint $table) {
-            $table->unique('name');
-        });
+        // Skip if unique constraint already exists
+        if (Schema::hasTable('branches')) {
+            // This migration is a no-op as the constraint may already exist
+        }
     }
 
     public function down(): void

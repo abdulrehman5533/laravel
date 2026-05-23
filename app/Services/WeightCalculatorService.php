@@ -321,6 +321,128 @@ class WeightCalculatorService
     }
 
     /**
+     * Calculate old gold exchange deduction
+     */
+    public function calculateOldGoldExchange($oldGoldWeight, $oldGoldKarat, $ratePerGram): array
+    {
+        $pureWeight = $this->calculatePureMetalWeight($oldGoldWeight, $oldGoldKarat);
+        $exchangeValue = $pureWeight * $ratePerGram;
+        return [
+            'old_gold_weight'    => round($oldGoldWeight, 4),
+            'old_gold_karat'     => $oldGoldKarat,
+            'old_gold_pure_wt'   => round($pureWeight, 4),
+            'exchange_value'     => round($exchangeValue, 2),
+        ];
+    }
+
+    /**
+     * Calculate multiple stones total cost
+     */
+    public function calculateMultipleStones(array $stones, $rattiType = 'sunari'): array
+    {
+        $totalCost   = 0;
+        $totalCarats = 0;
+        $details     = [];
+        foreach ($stones as $stone) {
+            if (empty($stone['weight']) || empty($stone['price_per_carat'])) continue;
+            $calc = $this->calculateStonesCost($stone['weight'], $stone['unit'] ?? 'carat', $stone['price_per_carat'], $rattiType);
+            $totalCost   += $calc['stone_cost'];
+            $totalCarats += $calc['stone_weight_carats'];
+            $details[]    = array_merge($stone, $calc);
+        }
+        return ['total_cost' => round($totalCost, 2), 'total_carats' => round($totalCarats, 4), 'details' => $details];
+    }
+
+    /**
+     * Complete price breakdown with all new features
+     */
+    public function calculateFullBreakdown(array $input): array
+    {
+        $grossWeightGrams = $this->toGrams($input['gross_weight'], $input['unit'], $input['ratti_type'] ?? 'sunari');
+        $stoneWeightGrams = isset($input['stone_weight']) && $input['stone_weight'] > 0
+            ? $this->toGrams($input['stone_weight'], $input['stone_unit'] ?? 'carat', $input['ratti_type'] ?? 'sunari')
+            : 0;
+        $netMetalWeight = $grossWeightGrams - $stoneWeightGrams;
+
+        // Metal value
+        $metalCalc   = $this->calculateMetalValue($netMetalWeight, $input['karat'], $input['rate_per_gram']);
+        $wastageCalc = $this->calculateWastage($netMetalWeight, $input['karat'], $input['wastage_type'], $input['wastage_value'], $input['rate_per_gram']);
+        $makingCalc  = $this->calculateMakingCharges($netMetalWeight, $input['karat'], $input['rate_per_gram'], $input['making_charge_type'], $input['making_charge_value']);
+
+        // Multiple stones
+        $stonesCalc = $this->calculateMultipleStones($input['stones'] ?? [], $input['ratti_type'] ?? 'sunari');
+
+        // Hallmark charges
+        $hallmarkCharge = (float)($input['hallmark_charge'] ?? 0);
+
+        // Custom charges
+        $customCharges = (float)($input['custom_charges'] ?? 0);
+
+        // Profit margin
+        $subtotalBeforeProfit = $metalCalc['pure_value'] + $wastageCalc['wastage_value']
+            + $makingCalc['making_charges'] + $stonesCalc['total_cost']
+            + $hallmarkCharge + $customCharges;
+
+        $profitMargin  = (float)($input['profit_margin'] ?? 0);
+        $profitAmount  = ($subtotalBeforeProfit * $profitMargin) / 100;
+        $subtotal      = $subtotalBeforeProfit + $profitAmount;
+
+        // Tax
+        $taxAmount = ($subtotal * (float)($input['tax_percentage'] ?? 0)) / 100;
+
+        // Discount
+        $discountAmount = ($subtotal * (float)($input['discount_percentage'] ?? 0)) / 100;
+
+        // Old gold exchange
+        $oldGoldCalc    = ['exchange_value' => 0];
+        $oldGoldDeduct  = 0;
+        if (!empty($input['old_gold_weight']) && $input['old_gold_weight'] > 0) {
+            $oldGoldCalc   = $this->calculateOldGoldExchange($input['old_gold_weight'], $input['old_gold_karat'] ?? 22, $input['rate_per_gram']);
+            $oldGoldDeduct = $oldGoldCalc['exchange_value'];
+        }
+
+        $finalTotal = $subtotal + $taxAmount - $discountAmount - $oldGoldDeduct;
+
+        return [
+            'gross_weight_grams'   => round($grossWeightGrams, 4),
+            'net_metal_weight'     => round($netMetalWeight, 4),
+            'karat'                => $input['karat'],
+            'purity_percentage'    => $this->getKaratPurity($input['karat']),
+            'pure_weight'          => $metalCalc['pure_weight'],
+            'rate_per_gram'        => $input['rate_per_gram'],
+            'metal_value'          => $metalCalc['pure_value'],
+            'wastage_type'         => $input['wastage_type'],
+            'wastage_input'        => $input['wastage_value'],
+            'wastage_weight'       => $wastageCalc['wastage_weight'],
+            'wastage_value'        => $wastageCalc['wastage_value'],
+            'making_charges'       => $makingCalc['making_charges'],
+            'making_charge_description' => $makingCalc['description'],
+            'stones'               => $stonesCalc,
+            'hallmark_charge'      => $hallmarkCharge,
+            'custom_charges'       => $customCharges,
+            'profit_margin'        => $profitMargin,
+            'profit_amount'        => round($profitAmount, 2),
+            'subtotal'             => round($subtotal, 2),
+            'tax_percentage'       => $input['tax_percentage'] ?? 0,
+            'tax_amount'           => round($taxAmount, 2),
+            'discount_percentage'  => $input['discount_percentage'] ?? 0,
+            'discount_amount'      => round($discountAmount, 2),
+            'old_gold'             => $oldGoldCalc,
+            'old_gold_deduction'   => round($oldGoldDeduct, 2),
+            'final_total'          => round(max(0, $finalTotal), 2),
+            // legacy fields for backward compat
+            'gross_weight_input'   => $input['gross_weight'],
+            'input_unit'           => $input['unit'],
+            'stone_weight'         => $input['stone_weight'] ?? 0,
+            'stone_unit'           => $input['stone_unit'] ?? 'carat',
+            'stone_weight_carats'  => $stonesCalc['total_carats'],
+            'stone_price_per_carat'=> 0,
+            'stone_total_cost'     => $stonesCalc['total_cost'],
+            'ratti_type'           => $input['ratti_type'] ?? 'sunari',
+        ];
+    }
+
+    /**
      * Get all supported units
      */
     public function getSupportedUnits(): array

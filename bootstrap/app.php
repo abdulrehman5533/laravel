@@ -3,22 +3,30 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         health: '/up',
+        then: function () {
+            Route::middleware('web')
+                ->group(base_path('routes/ai-agent.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust ngrok proxy
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'api/tab-close-logout',
         ]);
 
         $middleware->alias([
-            'permission' => \App\Http\Middleware\CheckPermission::class,
+            'permission'    => \App\Http\Middleware\CheckPermission::class,
             'central_admin' => \App\Http\Middleware\CentralAdminMiddleware::class,
-            'plan_feature' => \App\Http\Middleware\CheckPlanFeature::class,
+            'plan_feature'  => \App\Http\Middleware\CheckPlanFeature::class,
         ]);
 
         $middleware->appendToGroup('web', [

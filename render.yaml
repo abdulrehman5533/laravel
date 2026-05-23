@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: jewellery-management-system
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_NAME
+        value: "MAGIA LUPOS"
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        fromService:
+          type: web
+          name: jewellery-management-system
+          property: host
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          name: jewellery-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: jewellery-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: jewellery-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: jewellery-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: jewellery-db
+          property: password
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: LOG_CHANNEL
+        value: stderr
+
+databases:
+  - name: jewellery-db
+    plan: free
+    databaseName: jewellery
+    user: jewellery_user

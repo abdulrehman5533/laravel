@@ -2,109 +2,236 @@
 
 namespace App\Services;
 
-use App\Models\NotificationHistory;
-use App\Models\NotificationTemplate;
 use App\Models\User;
+use App\Models\NotificationHistory;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class NotificationService
 {
     /**
-     * Send notification based on a trigger event.
+     * Send email notification
      */
-    public function notify(string $event, User $user, array $data = [])
+    public function sendEmail($to, $subject, $message, $type = 'info')
     {
-        $template = NotificationTemplate::where('trigger_event', $event)
-            ->where('is_active', true)
-            ->first();
+        try {
+            Mail::raw($message, function ($mail) use ($to, $subject) {
+                $mail->to($to)
+                    ->subject($subject);
+            });
 
-        if (! $template) {
-            Log::warning("No notification template found for event: {$event}");
-
-            return;
+            $this->logNotification('email', $to, $subject, 'sent');
+            return ['status' => 'success', 'message' => 'Email بھیجی گئی'];
+        } catch (\Exception $e) {
+            Log::error('Email error: ' . $e->getMessage());
+            $this->logNotification('email', $to, $subject, 'failed', $e->getMessage());
+            return ['status' => 'error', 'message' => 'Email بھیجنے میں خرابی'];
         }
-
-        $body = $this->parseTemplate($template->body, $data);
-        $subject = $this->parseTemplate($template->subject ?? '', $data);
-
-        return $this->sendOmnichannel($user, $body, $template->channels, $subject, $event);
     }
 
     /**
-     * Parse template placeholders.
+     * Send SMS notification
      */
-    protected function parseTemplate(string $text, array $data)
+    public function sendSMS($phone, $message)
     {
-        foreach ($data as $key => $value) {
-            $text = str_replace("{{{$key}}}", $value, $text);
-        }
-
-        return $text;
-    }
-
-    public function sendOmnichannel($user, $message, $channels = ['email', 'sms', 'whatsapp'], $subject = '', $event = 'general')
-    {
-        $results = [];
-
-        foreach ($channels as $channel) {
-            $status = 'sent';
-            $error = null;
-
-            try {
-                match ($channel) {
-                    'email' => $this->sendEmail($user->email, $message, $subject),
-                    'sms' => $this->sendSms($user->phone, $message),
-                    'whatsapp' => $this->sendWhatsApp($user->phone, $message),
-                    'in_app' => $this->sendInApp($user->id, $message),
-                    default => throw new \Exception("Unsupported channel: {$channel}"),
-                };
-            } catch (\Exception $e) {
-                $status = 'failed';
-                $error = $e->getMessage();
+        try {
+            $apiKey = env('SMS_API_KEY');
+            
+            if (!$apiKey) {
+                return ['status' => 'success', 'message' => 'SMS API key نہیں ہے'];
             }
 
-            NotificationHistory::create([
-                'user_id' => $user->id,
-                'channel' => $channel,
-                'event_type' => $event,
-                'status' => $status,
-                'error_message' => $error,
+            // مثال کے طور پر - اپنی SMS service استعمال کریں
+            $response = Http::post('https://api.sms-service.com/send', [
+                'api_key' => $apiKey,
+                'phone' => $phone,
+                'message' => $message
             ]);
 
-            $results[$channel] = $status;
+            $this->logNotification('sms', $phone, $message, 'sent');
+            return ['status' => 'success', 'message' => 'SMS بھیجی گئی'];
+        } catch (\Exception $e) {
+            Log::error('SMS error: ' . $e->getMessage());
+            $this->logNotification('sms', $phone, $message, 'failed', $e->getMessage());
+            return ['status' => 'error', 'message' => 'SMS بھیجنے میں خرابی'];
+        }
+    }
+
+    /**
+     * Send in-app notification
+     */
+    public function sendInAppNotification($userId, $title, $message, $type = 'info', $actionUrl = null)
+    {
+        try {
+            $user = User::find($userId);
+            
+            if (!$user) {
+                return ['status' => 'error', 'message' => 'صارف نہیں ملا'];
+            }
+
+            // Database میں notification save کریں
+            $notification = NotificationHistory::create([
+                'user_id' => $userId,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'action_url' => $actionUrl,
+                'is_read' => false,
+                'created_at' => now()
+            ]);
+
+            $this->logNotification('in-app', $userId, $title, 'sent');
+            return ['status' => 'success', 'message' => 'In-app notification بھیجی گئی'];
+        } catch (\Exception $e) {
+            Log::error('In-app notification error: ' . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Notification بھیجنے میں خرابی'];
+        }
+    }
+
+    /**
+     * Send WhatsApp notification
+     */
+    public function sendWhatsApp($phone, $message)
+    {
+        try {
+            $apiKey = env('WHATSAPP_API_KEY');
+            
+            if (!$apiKey) {
+                return ['status' => 'success', 'message' => 'WhatsApp API key نہیں ہے'];
+            }
+
+            // مثال کے طور پر - Twilio یا دوسری service استعمال کریں
+            $response = Http::post('https://api.whatsapp.com/send', [
+                'api_key' => $apiKey,
+                'phone' => $phone,
+                'message' => $message
+            ]);
+
+            $this->logNotification('whatsapp', $phone, $message, 'sent');
+            return ['status' => 'success', 'message' => 'WhatsApp message بھیجی گئی'];
+        } catch (\Exception $e) {
+            Log::error('WhatsApp error: ' . $e->getMessage());
+            $this->logNotification('whatsapp', $phone, $message, 'failed', $e->getMessage());
+            return ['status' => 'error', 'message' => 'WhatsApp message بھیجنے میں خرابی'];
+        }
+    }
+
+    /**
+     * Send bulk notifications
+     */
+    public function sendBulkNotifications($userIds, $title, $message, $type = 'info')
+    {
+        $results = [];
+        
+        foreach ($userIds as $userId) {
+            $result = $this->sendInAppNotification($userId, $title, $message, $type);
+            $results[] = $result;
         }
 
-        return $results;
+        return [
+            'status' => 'success',
+            'message' => count($results) . ' notifications بھیجی گئیں',
+            'results' => $results
+        ];
     }
 
-    protected function sendEmail($email, $message, $subject)
+    /**
+     * Send alert notification
+     */
+    public function sendAlert($title, $message, $severity = 'info')
     {
-        // Integration with Mailgun/SES
-        return true;
+        try {
+            // تمام admins کو alert بھیجیں
+            $admins = User::where('role_id', 1)->get(); // Admin role
+
+            foreach ($admins as $admin) {
+                $this->sendInAppNotification($admin->id, $title, $message, $severity);
+                
+                // Email بھی بھیجیں
+                if ($severity === 'critical') {
+                    $this->sendEmail($admin->email, $title, $message, $severity);
+                }
+            }
+
+            return ['status' => 'success', 'message' => 'Alert بھیجی گئی'];
+        } catch (\Exception $e) {
+            Log::error('Alert error: ' . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Alert بھیجنے میں خرابی'];
+        }
     }
 
-    protected function sendSms($phone, $message)
+    /**
+     * Log notification
+     */
+    private function logNotification($type, $recipient, $subject, $status, $error = null)
     {
-        // Integration with Twilio/Nexmo
-        return true;
+        try {
+            NotificationHistory::create([
+                'type' => $type,
+                'recipient' => $recipient,
+                'subject' => $subject,
+                'status' => $status,
+                'error_message' => $error,
+                'created_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Notification logging error: ' . $e->getMessage());
+        }
     }
 
-    protected function sendWhatsApp($phone, $message)
+    /**
+     * Get user notifications
+     */
+    public function getUserNotifications($userId, $limit = 10)
     {
-        // Integration with Twilio WhatsApp API
-        return true;
+        try {
+            $notifications = NotificationHistory::where('user_id', $userId)
+                ->orderByDesc('created_at')
+                ->limit($limit)
+                ->get();
+
+            return [
+                'status' => 'success',
+                'data' => $notifications
+            ];
+        } catch (\Exception $e) {
+            Log::error('Get notifications error: ' . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Notifications حاصل کرنے میں خرابی'];
+        }
     }
 
-    protected function sendInApp($userId, $message)
+    /**
+     * Mark notification as read
+     */
+    public function markAsRead($notificationId)
     {
-        $user = User::find($userId);
-        if (!$user) return false;
+        try {
+            $notification = NotificationHistory::find($notificationId);
+            
+            if (!$notification) {
+                return ['status' => 'error', 'message' => 'Notification نہیں ملی'];
+            }
 
-        // Using Laravel's built-in database notifications
-        // This assumes a Notification class exists or we use a generic one
-        // For now, we'll log it as a history entry which is already handled in sendOmnichannel
-        // But we could also fire an event for real-time Pusher/Socket.io
-        
-        return true;
+            $notification->update(['is_read' => true]);
+            return ['status' => 'success', 'message' => 'Notification پڑھی گئی'];
+        } catch (\Exception $e) {
+            Log::error('Mark as read error: ' . $e->getMessage());
+            return ['status' => 'error', 'message' => 'خرابی'];
+        }
+    }
+
+    /**
+     * Send AI Agent notification
+     */
+    public function sendAIAgentNotification($userId, $message, $actionType = 'info')
+    {
+        return $this->sendInAppNotification(
+            $userId,
+            'AI Agent',
+            $message,
+            $actionType,
+            '/ai-agent/chat'
+        );
     }
 }

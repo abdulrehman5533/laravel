@@ -31,22 +31,22 @@ class AccountingDashboardController extends Controller
         $totalExpenses = $this->calculateExpenses($startDate, $endDate);
         $netProfit = $totalIncome - $totalExpenses;
 
-        // Asset summary (debit = increase for assets)
-        $totalAssets = ChartOfAccount::byType('ASSET')->sum('opening_balance') +
+        // Asset summary
+        $totalAssets = ChartOfAccount::where('account_type', 'Asset')->sum('opening_balance') +
                       GeneralLedger::whereHas('account', function ($q) {
-                          $q->where('account_type', 'ASSET');
+                          $q->where('account_type', 'Asset');
                       })->sum('debit') -
                       GeneralLedger::whereHas('account', function ($q) {
-                          $q->where('account_type', 'ASSET');
+                          $q->where('account_type', 'Asset');
                       })->sum('credit');
 
-        // Liability summary (credit = increase for liabilities)
-        $totalLiabilities = ChartOfAccount::where('account_type', 'LIABILITY')->sum('opening_balance') +
+        // Liability summary
+        $totalLiabilities = ChartOfAccount::where('account_type', 'Liability')->sum('opening_balance') +
                            GeneralLedger::whereHas('account', function ($q) {
-                               $q->where('account_type', 'LIABILITY');
+                               $q->where('account_type', 'Liability');
                            })->sum('credit') -
                            GeneralLedger::whereHas('account', function ($q) {
-                               $q->where('account_type', 'LIABILITY');
+                               $q->where('account_type', 'Liability');
                            })->sum('debit');
 
         // Cash position (from Cashbook)
@@ -209,7 +209,7 @@ class AccountingDashboardController extends Controller
     private function calculateIncome($startDate, $endDate)
     {
         $data = GeneralLedger::whereHas('account', function ($q) {
-            $q->where('account_type', 'REVENUE');
+            $q->where('account_type', 'Income');
         })
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw('SUM(credit) as credits, SUM(debit) as debits')
@@ -224,7 +224,7 @@ class AccountingDashboardController extends Controller
     private function calculateExpenses($startDate, $endDate)
     {
         $data = GeneralLedger::whereHas('account', function ($q) {
-            $q->where('account_type', 'EXPENSE');
+            $q->where('account_type', 'Expense');
         })
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw('SUM(debit) as debits, SUM(credit) as credits')
@@ -243,7 +243,7 @@ class AccountingDashboardController extends Controller
         $expenses = [];
 
         $incomeData = GeneralLedger::whereHas('account', function ($q) {
-            $q->where('account_type', 'REVENUE');
+            $q->where('account_type', 'Income');
         })
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw('DATE(date) as date, SUM(credit - debit) as total')
@@ -252,7 +252,7 @@ class AccountingDashboardController extends Controller
             ->toArray();
 
         $expenseData = GeneralLedger::whereHas('account', function ($q) {
-            $q->where('account_type', 'EXPENSE');
+            $q->where('account_type', 'Expense');
         })
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw('DATE(date) as date, SUM(debit - credit) as total')

@@ -2,11 +2,9 @@
 protected $middlewareGroups = [
 	'web' => [
 		// ...existing web middleware...
-		// DISABLED: Causing session expiry issues
-		// \App\Http\Middleware\EnforceActiveSession::class,
-		// \App\Http\Middleware\EnforceIdleTimeout::class,
-		// Validates session exists in DB for every request
-		// \App\Http\Middleware\ValidateSessionInDatabase::class,
+		\App\Http\Middleware\EnforceActiveSession::class,
+		\App\Http\Middleware\EnforceIdleTimeout::class,
+		\App\Http\Middleware\ValidateSessionInDatabase::class,
 	],
 	// ...other groups...
 ];

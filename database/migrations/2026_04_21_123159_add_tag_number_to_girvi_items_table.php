@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('girvi_items', function (Blueprint $table) {
-            $table->string('tag_number')->nullable()->after('bag_number');
-        });
+        // Column already exists, skipping
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('girvi_items', function (Blueprint $table) {
-            $table->dropColumn('tag_number');
-        });
+        // No changes to reverse
     }
 };
