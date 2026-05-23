@@ -45,18 +45,17 @@ Create a new `.env` file for production:
 APP_NAME="MAGIA LUPOS"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://your-domain.infinityfreeapp.com
+APP_URL=https://magiajewllery.great-site.net
 APP_KEY=base64:YOUR_GENERATED_KEY_HERE
 
 LOG_CHANNEL=stack
 LOG_LEVEL=error
 
-DB_CONNECTION=mysql
-DB_HOST=sql123.infinityfree.com
+DB_HOST=sql308.infinityfree.com
 DB_PORT=3306
-DB_DATABASE=epiz_12345678_your_database
-DB_USERNAME=epiz_12345678
-DB_PASSWORD=your_password
+DB_DATABASE=if0_41999489_jewllery1
+DB_USERNAME=if0_41999489
+DB_PASSWORD=BG1rgNVPVRc
 
 BROADCAST_DRIVER=log
 CACHE_DRIVER=file

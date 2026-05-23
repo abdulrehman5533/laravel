@@ -10,17 +10,17 @@ app:
   name: "MAGIA LUPOS"
   environment: production
   debug: false
-  url: "https://your-domain.infinityfreeapp.com"
+  url: "https://magiajewllery.great-site.net"
   timezone: UTC
   locale: en
 
 # Database Configuration
 database:
   connection: mysql
-  host: sql123.infinityfree.com
+  host: sql308.infinityfree.com
   port: 3306
-  database: epiz_12345678_yourdb
-  username: epiz_12345678
+  database: if0_41999489_jewllery1
+  username: if0_41999489
   password: "${DB_PASSWORD}"
   
 # PHP Configuration (InfinityFree Compatible)
