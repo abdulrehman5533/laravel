@@ -1,9 +1,14 @@
-hoon name: Deploy to InfinityFree
+hoon name:  Deploy to InfinityFree
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'production'
 
 jobs:
   deploy:
@@ -45,7 +50,7 @@ jobs:
           php artisan view:cache
           php artisan optimize
 
-      - name: Deploy to InfinityFree via FTP
+      - name: 🚀 Deploy to InfinityFree via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ftpupload.net
@@ -53,11 +58,11 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /htdocs/
           local-dir: ./
+          dangerous-clean-slate: true
           exclude: |
             .git*
             .git/**
             node_modules/**
-            vendor/**
             .github/**
             tests/**
             .env
@@ -75,3 +80,4 @@ jobs:
             .eslintignore
             docker/**
             python-ai-agent/**
+            !vendor/**
