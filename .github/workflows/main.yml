@@ -16,22 +16,22 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         run: |
-          sudo apt-get update
-          sudo apt-get install -y php8.1 php8.1-cli php8.1-common php8.1-mbstring php8.1-xml php8.1-mysql php8.1-curl php8.1-zip
-          sudo apt-get install -y php8.1-sqlite3 php8.1-bcmath php8.1-gd
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq php8.1 php8.1-cli php8.1-common php8.1-mbstring php8.1-xml php8.1-mysql php8.1-curl php8.1-zip php8.1-sqlite3 php8.1-bcmath php8.1-gd > /dev/null 2>&1 || true
           php -v
+          composer --version
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --optimize-autoloader
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install npm dependencies
@@ -51,7 +51,7 @@ jobs:
           php artisan optimize
 
       - name: 🚀 Deploy to InfinityFree via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ftpupload.net
           username: ${{ secrets.FTP_USERNAME }}
